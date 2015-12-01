@@ -135,6 +135,7 @@
 	 * @param string title of notify
 	 * @param string content of notify
 	 * @param string the URL path to icon which will be display in notify
+	 * @param object which extra to notification
 	 * @param object group of callbacks
 	 * 				- onclick: function fired when user click to notify
 	 * 				- onclose: function fired when notification being closed
@@ -143,7 +144,7 @@
 	 *
 	 * @return boolean
 	 */
-	Notify.prototype.send = function(title, message, icon, callbacks, isRemoveAll)
+	Notify.prototype.send = function(title, message, icon, options, callbacks, isRemoveAll)
 	{
 		if(this.permissionStatus() !== this.PERMISSION_GRANTED)
 		{
@@ -178,10 +179,15 @@
 		}
 		else if (window.Notification)
 		{
-			notification = new window.Notification(title, {
+			var data = {
 				icon: icon,
 				body: message
-			});
+			};
+
+			for(key in Object(options)) {
+				data[key] = options[key];
+			}
+			notification = new window.Notification(title, data);
 		}
 
 		if(typeof notification === 'object')
