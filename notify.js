@@ -19,9 +19,11 @@
 		/**
 		 * Cache all notification which be sent
 		 *
-		 * @var array
+		 * @var object
 		 */
-		this.cached = [];
+		this.cached = {};
+
+		this.counter = 0;
 
 		this.PERMISSION_GRANTED = 'granted';
 		this.PERMISSION_DENIED 	= 'denied';
@@ -190,13 +192,43 @@
 			notification = new window.Notification(title, data);
 		}
 
+		if(!notification.data) 
+		{
+			notification.data = options;
+		}
+
+		++this.counter;
+		notification.identifier = this.counter;
+
 		if(typeof notification === 'object')
 		{
 			notification.onclick = (typeof Object(callbacks).onclick === 'function') ? callbacks.onclick : null;
 			notification.onclose = (typeof Object(callbacks).onclose === 'function') ? callbacks.onclose : null;
 			notification.onshow  = (typeof Object(callbacks).onshow === 'function') ? callbacks.onshow : null;
 			
-			this.cached.push(notification);
+			this.cached[notification.identifier] = notification;
+		}
+	};
+
+	Notify.prototype.remove = function(notification)
+	{
+		notification.onclose = null;
+
+		if(notification.identifier && this.cached[notification.identifier]) {
+			delete this.cached[notification.identifier];
+		}
+
+		if (notification.close)
+		{
+			notification.close();
+		}
+		else if (notification.cancel)
+		{
+			notification.cancel();
+		}
+		else if (window.external && window.external.msIsSiteMode())
+		{
+			window.external.msSiteModeClearIconOverlay();
 		}
 	};
 
@@ -209,22 +241,10 @@
 	{
 		this.cached.forEach(function(notification)
 		{
-			notification.onclose = null;
-			if (notification.close)
-			{
-				notification.close();
-			}
-			else if (notification.cancel)
-			{
-				notification.cancel();
-			}
-			else if (window.external && window.external.msIsSiteMode())
-			{
-				window.external.msSiteModeClearIconOverlay();
-			}
-		});
+			this.remove(notification);
+		}.bind(this));
 
-		this.cached = [];
+		this.cached = {};
 	};
 
 	// Attach the Notify function to global
